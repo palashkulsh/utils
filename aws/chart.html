@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Service Cost Bar Charts</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .chart-container {
+      width: 800px;
+      height: 400px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <input type="file" id="fileInput" accept=".csv">
+  <div id="chartContainer" style="overflow-y: auto; max-height: 80vh;"></div>
+
+  <script>
+    document.getElementById('fileInput').addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+
+      reader.onload = function (e) {
+        const csvData = e.target.result;
+        const data = parseCSV(csvData);
+        createBarCharts(data);
+      };
+
+      reader.readAsText(file);
+    });
+
+    function parseCSV(csvData) {
+      const lines = csvData.replace(/"/g,'').split('\n');
+      const headers = lines[0].split(',');
+      const data = {};
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',');
+        const date = values[0];
+
+        if (date !== 'Service total') {
+          for (let j = 1; j < values.length; j++) {
+            const service = headers[j];
+            const cost = parseFloat(values[j]);
+
+            if (!data[service]) {
+              data[service] = {
+                label: service,
+                dates: [],
+                costs: []
+              };
+            }
+            console.log(date,cost,values[j])
+            data[service].dates.push(date);
+            data[service].costs.push(cost);
+          }
+        }
+      }
+
+      return data;
+    }
+
+    function createBarCharts(data) {
+      const chartContainer = document.getElementById('chartContainer');
+      chartContainer.innerHTML = '';
+
+      for (const service in data) {
+        const canvas = document.createElement('canvas');
+        canvas.classList.add('chart-container');
+        chartContainer.appendChild(canvas);
+
+        new Chart(canvas, {
+          type: 'bar',
+          data: {
+            labels: data[service].dates,
+            datasets: [{
+              label: data[service].label,
+              data: data[service].costs,
+              backgroundColor: 'rgba(75, 192, 192, 0.6)',
+              borderColor: 'rgba(75, 192, 192, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: 'Cost'
+                }
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: 'Date'
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+  </script>
+</body>
+</html>
