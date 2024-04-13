@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mermaid.js Renderer</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      display: flex;
+      height: 100%;
+    }
+
+    .sidebar {
+      flex: 0 0 300px;
+      background-color: #f1f1f1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .text-area-container {
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      background-color: #fff;
+    }
+
+    .frame-number {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .text-area {
+      width: 100%;
+      height: 200px;
+      resize: none;
+      font-size: 14px;
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    .export-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    .content {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .diagram-container {
+      height: 100%;
+    }
+
+    .active-text-area {
+      background-color: #e6e6e6;
+    }
+
+    .image-carousel {
+      flex: 0 0 200px;
+      background-color: #f1f1f1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .carousel-item {
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+
+    .carousel-item img {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <h2>Mermaid.js Renderer</h2>
+      <div class="text-area-container-holder">
+	<div class="text-area-container active-text-area">
+          <div class="frame-number">Frame 1</div>
+          <textarea class="text-area" id="mermaidTextArea-0" placeholder="Enter Mermaid.js code here"></textarea>
+	</div>
+      </div>
+      <div class="button-container">
+        <button id="deleteBtn">Delete</button>
+        <button id="prevBtn">Previous</button>
+        <button id="renderBtn">Render</button>
+        <button id="addNextBtn">Add Next</button>
+        <button id="nextBtn">Next</button>
+      </div>
+      <div class="export-container">
+        <button id="exportPdfBtn">Export PDF</button>
+        <button id="exportJsonBtn">Export JSON</button>
+        <button id="exportHtmlBtn">Export Html</button>
+        <button id="exportHtmlPptBtn" onClick="exportCarouselAsPpt()">Export Html As PPT </button>
+	
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="diagram-container">
+        <div id="mermaidDiagram"></div>
+      </div>
+    </div>
+
+    <div class="image-carousel">
+      <h3>Diagram Carousel</h3>
+      <div id="carouselContainer"></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvg@1.5.3/dist/browser/canvg.min.js"></script>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/svg2pdf@1.1.1/src/index.min.js"></script>  
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.esm.min.mjs';
+    let currentIndex = 0;
+    const sidebar = document.querySelector('.sidebar');
+    const buttonContainer = document.querySelector('.button-container');
+    const mermaidTextAreas = [document.getElementById('mermaidTextArea-0')];
+    const mermaidDiagram = document.getElementById('mermaidDiagram');
+    const carouselContainer = document.getElementById('carouselContainer');
+
+    function updateTextArea() {
+      mermaidTextAreas.forEach((ta, i) => {
+        ta.parentElement.style.display = i === currentIndex ? 'block' : 'none';
+        ta.parentElement.classList.toggle('active-text-area', i === currentIndex);
+      });
+    }
+
+    function createNewTextArea() {
+      const newTextArea = document.createElement('textarea');
+      newTextArea.classList.add('text-area');
+      newTextArea.id = `mermaidTextArea-${currentIndex + 1}`;
+      newTextArea.placeholder = 'Enter Mermaid.js code here';
+
+      const frameNumber = document.createElement('div');
+      frameNumber.classList.add('frame-number');
+      frameNumber.textContent = `Frame ${currentIndex + 2}`;
+
+      const newTextAreaContainer = document.createElement('div');
+      newTextAreaContainer.classList.add('text-area-container');
+      newTextAreaContainer.appendChild(frameNumber);
+      newTextAreaContainer.appendChild(newTextArea);
+
+	sidebar.insertBefore(newTextAreaContainer, buttonContainer);
+	
+      mermaidTextAreas.push(newTextArea);
+    }
+
+    document.getElementById('deleteBtn').addEventListener('click', () => {
+      if (mermaidTextAreas.length > 1) {
+        mermaidTextAreas.splice(currentIndex, 1);
+        currentIndex = Math.max(currentIndex - 1, 0);
+        mermaidTextAreas[currentIndex].parentElement.remove();
+        updateTextArea();
+        renderDiagram();
+      }
+    });
+
+    document.getElementById('prevBtn').addEventListener('click', () => {
+      if (currentIndex > 0) {
+        currentIndex--;
+        updateTextArea();
+        renderDiagram();
+      }
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      if (currentIndex === mermaidTextAreas.length - 1) {
+        createNewTextArea();
+      }
+      currentIndex++;
+      const currentTextArea = mermaidTextAreas[currentIndex];
+      if (!currentTextArea.value) {
+        currentTextArea.value = mermaidTextAreas[currentIndex - 1].value;
+      }
+      updateTextArea();
+      renderDiagram();
+    });
+
+    document.getElementById('addNextBtn').addEventListener('click', () => {
+      const newTextArea = document.createElement('textarea');
+      newTextArea.classList.add('text-area');
+      newTextArea.id = `mermaidTextArea-${currentIndex + 1}`;
+      newTextArea.placeholder = 'Enter Mermaid.js code here';
+      newTextArea.value = mermaidTextAreas[currentIndex].value;
+
+      const frameNumber = document.createElement('div');
+      frameNumber.classList.add('frame-number');
+      frameNumber.textContent = `Frame ${currentIndex + 2}`;
+
+      const newTextAreaContainer = document.createElement('div');
+      newTextAreaContainer.classList.add('text-area-container');
+      newTextAreaContainer.appendChild(frameNumber);
+      newTextAreaContainer.appendChild(newTextArea);
+
+      sidebar.insertBefore(newTextAreaContainer, mermaidTextAreas[currentIndex + 1].parentElement);
+      mermaidTextAreas.splice(currentIndex + 1, 0, newTextArea);
+      currentIndex++;
+      updateTextArea();
+      renderDiagram();
+    });
+
+    document.getElementById('renderBtn').addEventListener('click', () => {
+	renderDiagram();
+    });
+
+    document.getElementById('exportPdfBtn').addEventListener('click', async () => {
+	const pdf = new jspdf.jsPDF();
+	const diagrams = document.querySelectorAll('.carousel-item');
+
+	for (let i = 0; i < diagrams.length; i++) {
+	    const diagram = diagrams[i];
+	    const svgElement = diagram.querySelector('svg');
+	    const svgString = new XMLSerializer().serializeToString(svgElement);
+
+	    const canvas = document.createElement('canvas');
+	    const ctx = canvas.getContext('2d');
+
+	    const pdfWidth = pdf.internal.pageSize.getWidth();
+	    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+	    canvas.width = pdfWidth;
+	    canvas.height = pdfHeight;
+
+	    await canvg(canvas, svgString, {
+		ignoreDimensions: true,
+		scaleWidth: pdfWidth,
+		scaleHeight: pdfHeight,
+	    });
+
+	    const imgData = canvas.toDataURL('image/png');
+
+	    if (i > 0) {
+		pdf.addPage();
+	    }
+
+	    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+	}
+
+	await pdf.save('diagrams.pdf');
+    });
+
+    document.getElementById('exportHtmlBtn').addEventListener('click',() => {
+	const carousel = document.querySelector('.image-carousel');
+	const carouselItems = carousel.querySelectorAll('.carousel-item');
+
+	let htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exported Carousel</title>
+  <style>
+    .image-carousel {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .carousel-item {
+      margin: 10px;
+    }
+    .carousel-item svg {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="image-carousel">
+`;
+
+	carouselItems.forEach((item) => {
+	    const svgElement = item.querySelector('svg');
+	    const svgString = new XMLSerializer().serializeToString(svgElement);
+	    htmlContent += `    <div class="carousel-item">${svgString}</div>\n`;
+	});
+
+	htmlContent += `  </div>
+</body>
+</html>`;
+
+	const blob = new Blob([htmlContent], { type: 'text/html' });
+	const url = URL.createObjectURL(blob);
+
+	const link = document.createElement('a');
+	link.href = url;
+	link.download = 'exported_carousel.html';
+	link.click();
+
+	URL.revokeObjectURL(url);
+    });
+    
+    document.getElementById('exportHtmlPptBtn').addEventListener('click',() => {
+	const carousel = document.querySelector('.image-carousel');
+	const carouselItems = carousel.querySelectorAll('.carousel-item');
+
+	let htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exported Carousel PPT</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .carousel-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+      width: 100%;
+      height: 90vh;
+      }
+       .carousel-arrow {
+	   font-size: 24px;
+	   cursor: pointer;
+	   margin: 0 20px;
+       }
+       .carousel-image {
+	   max-width: 100%;
+	   max-height: 100%;
+	   object-fit: contain;
+	   cursor: zoom-in;
+       }
+       .carousel-image.zoomed {
+	   cursor: zoom-out;
+	   max-width: none;
+	   max-height: none;
+       }
+       .carousel-footer {
+	   display: flex;
+	   justify-content: center;
+	   align-items: center;
+	   overflow-x: auto;
+	   max-width: 100%;
+	   padding: 10px;
+       }
+       .carousel-thumbnail {
+	   width: 100px;
+	   height: 100px;
+	   object-fit: contain;
+	   margin: 0 5px;
+	   cursor: pointer;
+       }
+       .fullscreen {
+	   position: fixed;
+	   top: 0;
+	   left: 0;
+	   width: 100%;
+	   height: 100%;
+	   background-color: grey;
+	   display: flex;
+	   justify-content: center;
+	   align-items: center;
+	   z-index: 9999;
+       }
+       .fullscreen .carousel-image {
+	   max-width: 100%;
+	   max-height: 100%;
+	   object-fit: contain;
+       }
+       .fullscreen-button {
+	   position: fixed;
+	   top: 20px;
+	   right: 20px;
+	   padding: 10px;
+	   background-color: white;
+	   border: none;
+	   border-radius: 5px;
+	   cursor: pointer;
+	   z-index: 10000;
+       }
+</style>
+</head>
+<body>
+  <div class="carousel-container">
+    <div class="carousel-arrow" onclick="showPreviousImage()">&lt;</div>
+    <img class="carousel-image" src="" alt="Carousel Image" onclick="toggleZoom()">
+    <div class="carousel-arrow" onclick="showNextImage()">&gt;</div>
+  </div>
+  <div class="carousel-footer">`;
+
+	carouselItems.forEach((item, index) => {
+	    const svgElement = item.querySelector('svg');
+	    const svgString = new XMLSerializer().serializeToString(svgElement);
+	    const svgDataUrl = `data:image/svg+xml;base64,${btoa(svgString)}`;
+
+	    htmlContent += `    <img class="carousel-thumbnail" src="${svgDataUrl}" alt="Thumbnail ${index}" onclick="showImage(${index})">\n`;
+	});
+
+	htmlContent += `  </div>
+  <button class="fullscreen-button" onclick="toggleFullscreen()">Enter PPT Mode</button>
+  <script>
+    const carouselImages = document.querySelectorAll('.carousel-thumbnail');
+    const carouselImage = document.querySelector('.carousel-image');
+    let currentImageIndex = 0;
+    let isFullscreen = false;
+
+    function showImage(index) {
+    currentImageIndex = index;
+    carouselImage.src = carouselImages[currentImageIndex].src;
+    updateFullscreenImage();
+    }
+
+    function showPreviousImage() {
+    currentImageIndex = (currentImageIndex - 1 + carouselImages.length) % carouselImages.length;
+    showImage(currentImageIndex);
+    }
+
+    function showNextImage() {
+    currentImageIndex = (currentImageIndex + 1) % carouselImages.length;
+    showImage(currentImageIndex);
+    }
+
+    function toggleZoom() {
+    carouselImage.classList.toggle('zoomed');
+    }
+
+    function updateFullscreenImage() {
+    const fullscreenImage = document.querySelector('.fullscreen .carousel-image');
+    if (fullscreenImage) {
+    fullscreenImage.src = carouselImages[currentImageIndex].src;
+    }
+    }
+
+    function toggleFullscreen() {
+    isFullscreen = !isFullscreen;
+    if (isFullscreen) {
+    document.body.innerHTML = \`
+    <div class="fullscreen">
+      <div class="carousel-arrow" onclick="showPreviousImage()">&lt;</div>
+      <img class="carousel-image" src="\${carouselImage.src}" alt="Carousel Image">
+      <div class="carousel-arrow" onclick="showNextImage()">&gt;</div>
+      <button class="fullscreen-button" onclick="toggleFullscreen()">Exit PPT Mode (Esc)</button>
+    </div>
+    \`;
+    } else {
+    location.reload();
+    }
+    }
+
+    document.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowLeft') {
+    showPreviousImage();
+    } else if (event.key === 'ArrowRight') {
+    showNextImage();
+    } else if (event.key === 'Enter' || event.key === ' ') {
+    toggleFullscreen();
+    } else if (event.key === 'Escape') {
+    if (isFullscreen) {
+    toggleFullscreen();
+    }
+    }
+    });
+
+    showImage(currentImageIndex);
+    <\/script>
+</body>
+</html>`;
+
+	const blob = new Blob([htmlContent], { type: 'text/html' });
+	const url = URL.createObjectURL(blob);
+
+	const link = document.createElement('a');
+	link.href = url;
+	link.download = 'exported_carousel_ppt.html';
+	link.click();
+
+	URL.revokeObjectURL(url);
+    });
+    
+    document.getElementById('exportJsonBtn').addEventListener('click', () => {
+      const data = mermaidTextAreas.map((textArea) => textArea.value);
+      const jsonData = JSON.stringify({ data }, null, 2);
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'diagrams.json';
+      link.click();
+    });
+
+    async function renderDiagram() {
+	const currentTextArea = mermaidTextAreas[currentIndex];
+	const mermaidCode = currentTextArea.value;
+	mermaid.initialize({
+	    startOnLoad: false,
+	    securityLevel: 'loose',
+            theme: 'default',
+	    flowchart: {
+		useMaxWidth: false,
+		htmlLabels: false
+	    },	    
+	});
+        console.log(mermaidCode)
+	const {svg} = await mermaid.render('mermaid-diagram', mermaidCode);
+	let svgCode = svg;
+        mermaidDiagram.innerHTML = svgCode;
+        updateCarousel();
+    }
+
+    async function updateCarousel() {
+      carouselContainer.innerHTML = '';
+      mermaidTextAreas.forEach(async (textArea, index) => {
+        const mermaidCode = textArea.value;
+          const {svg} = await mermaid.render(`graph-${index}`, mermaidCode);
+	  let svgCode = svg;
+	  console.log(svgCode);
+          const carouselItem = document.createElement('div');
+          carouselItem.classList.add('carousel-item');
+          carouselItem.innerHTML = svgCode;
+          carouselItem.addEventListener('click', () => {
+            currentIndex = index;
+            updateTextArea();
+            renderDiagram();
+          });
+          carouselContainer.appendChild(carouselItem);
+        });
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        document.getElementById('prevBtn').click();
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        document.getElementById('nextBtn').click();
+      }
+    });
+
+    updateTextArea();
+    renderDiagram();
+
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'default',
+    });
+  </script>
+</body>
+</html>
