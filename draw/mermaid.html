@@ -275,7 +275,7 @@
     document.getElementById('renderBtn').addEventListener('click', () => {
 	renderDiagram();
     });
-    
+
     document.getElementById('exportPdfBtn').addEventListener('click', async () => {
 	const pdf = new jspdf.jsPDF();
 	const diagrams = document.querySelectorAll('.carousel-item');
@@ -288,24 +288,18 @@
 	    const canvas = document.createElement('canvas');
 	    const ctx = canvas.getContext('2d');
 
-	    // Increase the canvas dimensions for better quality
 	    const pdfWidth = pdf.internal.pageSize.getWidth();
 	    const pdfHeight = pdf.internal.pageSize.getHeight();
-	    const dpi = 300; // Choose a higher DPI for better quality
-	    canvas.width = pdfWidth * dpi / 72;
-	    canvas.height = pdfHeight * dpi / 72;
+
+	    const dpi = 300;
+	    canvas.width = svgElement.getBoundingClientRect().width * dpi / 72;
+	    canvas.height = svgElement.getBoundingClientRect().height * dpi / 72;
 
 	    await canvg(canvas, svgString, {
 		ignoreDimensions: true,
 		scaleWidth: canvas.width,
 		scaleHeight: canvas.height,
 		useCORS: true,
-		// Customize the rendering options if needed
-		// For example, set the fill color and stroke width
-		// renderCallback: (renderConfig) => {
-		//   renderConfig.canvasContext.setFillStyle('#000000');
-		//   renderConfig.canvasContext.setLineWidth(1);
-		// },
 	    });
 
 	    const imgData = canvas.toDataURL('image/png');
@@ -314,7 +308,24 @@
 		pdf.addPage();
 	    }
 
-	    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+	    const margin = 5;
+	    const maxWidth = pdfWidth - margin * 2;
+	    const maxHeight = pdfHeight - margin * 2;
+
+	    const imgWidth = canvas.width;
+	    const imgHeight = canvas.height;
+
+	    const widthRatio = maxWidth / imgWidth;
+	    const heightRatio = maxHeight / imgHeight;
+	    const scale = Math.min(widthRatio, heightRatio);
+
+	    const scaledWidth = imgWidth * scale;
+	    const scaledHeight = imgHeight * scale;
+
+	    const imgPosX = (pdfWidth - scaledWidth) / 2;
+	    const imgPosY = (pdfHeight - scaledHeight) / 2;
+
+	    pdf.addImage(imgData, 'PNG', imgPosX, imgPosY, scaledWidth, scaledHeight);
 
 	    // Add page number
 	    const pageNumber = i + 1;
@@ -323,7 +334,7 @@
 	}
 
 	await pdf.save('diagrams.pdf');
-    });
+    });    
     
     document.getElementById('exportHtmlBtn').addEventListener('click',() => {
 	const carousel = document.querySelector('.image-carousel');
