@@ -82,6 +82,13 @@
       max-width: 100%;
       height: auto;
     }
+
+    .import-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    
   </style>
 </head>
 <body>
@@ -196,6 +203,10 @@
       renderDiagram();
     });
 
+    document.getElementById('importJsonInput').addEventListener('click', () => {
+	console.log('input clicked');
+    })
+    
     document.getElementById('importJsonBtn').addEventListener('click', () => {
 	const fileInput = document.getElementById('importJsonInput');
 	const file = fileInput.files[0];
