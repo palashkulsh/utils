@@ -105,9 +105,12 @@
         <button id="exportPdfBtn">Export PDF</button>
         <button id="exportJsonBtn">Export JSON</button>
         <button id="exportHtmlBtn">Export Html</button>
-        <button id="exportHtmlPptBtn" onClick="exportCarouselAsPpt()">Export Html As PPT </button>
-	
-      </div>
+        <button id="exportHtmlPptBtn" onClick="exportCarouselAsPpt()">Export Html As PPT </button>	
+      </div> 
+      <div class="import-container">
+	<input type="file" id="importJsonInput" accept=".json">
+	<button id="importJsonBtn">Import JSON</button>
+      </div>     
     </div>
 
     <div class="content">
@@ -131,7 +134,7 @@
     let currentIndex = 0;
     const sidebar = document.querySelector('.sidebar');
     const buttonContainer = document.querySelector('.button-container');
-    const mermaidTextAreas = [document.getElementById('mermaidTextArea-0')];
+    let  mermaidTextAreas = [document.getElementById('mermaidTextArea-0')];
     const mermaidDiagram = document.getElementById('mermaidDiagram');
     const carouselContainer = document.getElementById('carouselContainer');
 
@@ -193,6 +196,48 @@
       renderDiagram();
     });
 
+    document.getElementById('importJsonBtn').addEventListener('click', () => {
+	const fileInput = document.getElementById('importJsonInput');
+	const file = fileInput.files[0];
+
+	if (file) {
+	    const reader = new FileReader();
+	    reader.onload = (event) => {
+		const jsonData = JSON.parse(event.target.result);
+		loadDiagramsFromJson(jsonData.data);
+	    };
+	    reader.readAsText(file);
+	}
+    });
+    
+    function loadDiagramsFromJson(data) {
+	mermaidTextAreas.forEach((textArea) => textArea.parentElement.remove());
+	mermaidTextAreas = [];
+	currentIndex = 0;
+
+	data.forEach((diagramData, index) => {
+	    const newTextArea = document.createElement('textarea');
+	    newTextArea.classList.add('text-area');
+	    newTextArea.id = `mermaidTextArea-${index}`;
+	    newTextArea.value = diagramData;
+
+	    const frameNumber = document.createElement('div');
+	    frameNumber.classList.add('frame-number');
+	    frameNumber.textContent = `Frame ${index + 1}`;
+
+	    const newTextAreaContainer = document.createElement('div');
+	    newTextAreaContainer.classList.add('text-area-container');
+	    newTextAreaContainer.appendChild(frameNumber);
+	    newTextAreaContainer.appendChild(newTextArea);
+
+	    sidebar.insertBefore(newTextAreaContainer, buttonContainer);
+	    mermaidTextAreas.push(newTextArea);
+	});
+
+	updateTextArea();
+	renderDiagram();
+    }
+    
     document.getElementById('addNextBtn').addEventListener('click', () => {
       const newTextArea = document.createElement('textarea');
       newTextArea.classList.add('text-area');
