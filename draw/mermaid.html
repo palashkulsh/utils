@@ -135,7 +135,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvg@1.5.3/dist/browser/canvg.min.js"></script>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/svg2pdf@1.1.1/src/index.min.js"></script>  
+  <script src="https://cdn.jsdelivr.net/npm/svg2pdf@1.1.1/src/index.min.js"></script>
   <script type="module">
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.esm.min.mjs';
     let currentIndex = 0;
@@ -275,7 +275,7 @@
     document.getElementById('renderBtn').addEventListener('click', () => {
 	renderDiagram();
     });
-
+    
     document.getElementById('exportPdfBtn').addEventListener('click', async () => {
 	const pdf = new jspdf.jsPDF();
 	const diagrams = document.querySelectorAll('.carousel-item');
@@ -288,16 +288,24 @@
 	    const canvas = document.createElement('canvas');
 	    const ctx = canvas.getContext('2d');
 
+	    // Increase the canvas dimensions for better quality
 	    const pdfWidth = pdf.internal.pageSize.getWidth();
 	    const pdfHeight = pdf.internal.pageSize.getHeight();
-
-	    canvas.width = pdfWidth;
-	    canvas.height = pdfHeight;
+	    const dpi = 300; // Choose a higher DPI for better quality
+	    canvas.width = pdfWidth * dpi / 72;
+	    canvas.height = pdfHeight * dpi / 72;
 
 	    await canvg(canvas, svgString, {
 		ignoreDimensions: true,
-		scaleWidth: pdfWidth,
-		scaleHeight: pdfHeight,
+		scaleWidth: canvas.width,
+		scaleHeight: canvas.height,
+		useCORS: true,
+		// Customize the rendering options if needed
+		// For example, set the fill color and stroke width
+		// renderCallback: (renderConfig) => {
+		//   renderConfig.canvasContext.setFillStyle('#000000');
+		//   renderConfig.canvasContext.setLineWidth(1);
+		// },
 	    });
 
 	    const imgData = canvas.toDataURL('image/png');
@@ -307,11 +315,16 @@
 	    }
 
 	    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+	    // Add page number
+	    const pageNumber = i + 1;
+	    pdf.setFontSize(12);
+	    pdf.text(`Page ${pageNumber} of ${diagrams.length}`, pdfWidth / 2, pdfHeight - 10, { align: 'center' });
 	}
 
 	await pdf.save('diagrams.pdf');
     });
-
+    
     document.getElementById('exportHtmlBtn').addEventListener('click',() => {
 	const carousel = document.querySelector('.image-carousel');
 	const carouselItems = carousel.querySelectorAll('.carousel-item');
