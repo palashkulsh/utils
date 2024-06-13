@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Question and Answer Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .question {
+      margin-bottom: 20px;
+    }
+    .question label {
+      display: inline-block;
+      width: 150px;
+      font-weight: bold;
+    }
+    .question input {
+      width: 300px;
+      padding: 5px;
+    }
+    .output {
+      margin-top: 30px;
+      border: 1px solid #ccc;
+      padding: 20px;
+    }
+    .output h2 {
+      margin-top: 0;
+    }
+    .output table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .output table td {
+      padding: 5px;
+      border: 1px solid #ccc;
+    }
+    .output button {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Question and Answer Page</h1>
+  <input type="text" id="title" placeholder="Enter a title">
+  <br><br>
+  <div class="question">
+    <label for="q1">1. What to do?</label>
+    <input type="text" id="q1">
+  </div>
+  <div class="question">
+    <label for="q2">2. Why to do it?</label>
+    <input type="text" id="q2">
+  </div>
+  <div class="question">
+    <label for="q3">3. When to do it?</label>
+    <input type="text" id="q3">
+  </div>
+  <div class="question">
+    <label for="q4">4. Where to do it?</label>
+    <input type="text" id="q4">
+  </div>
+  <div class="question">
+    <label for="q5">5. How to do it?</label>
+    <input type="text" id="q5">
+  </div>
+  <br>
+  <button onclick="displayOutput()">Submit</button>
+  
+  <div class="output" style="display: none;">
+    <h2 id="output-title"></h2>
+    <table>
+      <tr>
+        <td>1. What to do?</td>
+        <td id="output-q1"></td>
+      </tr>
+      <tr>
+        <td>2. Why to do it?</td>
+        <td id="output-q2"></td>
+      </tr>
+      <tr>
+        <td>3. When to do it?</td>
+        <td id="output-q3"></td>
+      </tr>
+      <tr>
+        <td>4. Where to do it?</td>
+        <td id="output-q4"></td>
+      </tr>
+      <tr>
+        <td>5. How to do it?</td>
+        <td id="output-q5"></td>
+      </tr>
+    </table>
+    <button onclick="exportOutput()">Export</button>
+  </div>
+
+  <script>
+    function displayOutput() {
+      let title = document.getElementById('title').value;
+      let q1 = document.getElementById('q1').value;
+      let q2 = document.getElementById('q2').value;
+      let q3 = document.getElementById('q3').value;
+      let q4 = document.getElementById('q4').value;
+      let q5 = document.getElementById('q5').value;
+      
+      let queryParams = '?title=' + encodeURIComponent(title) +
+                        '&q1=' + encodeURIComponent(q1) +
+                        '&q2=' + encodeURIComponent(q2) +
+                        '&q3=' + encodeURIComponent(q3) +
+                        '&q4=' + encodeURIComponent(q4) +
+                        '&q5=' + encodeURIComponent(q5);
+      
+      window.history.pushState({}, '', window.location.pathname + queryParams);
+      
+      document.getElementById('output-title').textContent = title;
+      document.getElementById('output-q1').textContent = q1;
+      document.getElementById('output-q2').textContent = q2;
+      document.getElementById('output-q3').textContent = q3;
+      document.getElementById('output-q4').textContent = q4;
+      document.getElementById('output-q5').textContent = q5;
+      document.querySelector('.output').style.display = 'block';
+    }
+    
+    function exportOutput() {
+      let outputTable = document.querySelector('.output table');
+      let outputTitle = document.getElementById('output-title').textContent;
+      let outputHTML = '<table>' + outputTable.innerHTML + '</table>';
+      
+      let exportWindow = window.open('', '_blank');
+      exportWindow.document.write('<html><head><title>' + outputTitle + '</title></head><body>');
+      exportWindow.document.write('<h1>' + outputTitle + '</h1>');
+      exportWindow.document.write(outputHTML);
+      exportWindow.document.write('</body></html>');
+      exportWindow.document.close();
+    }
+    
+    window.onload = function() {
+      let urlParams = new URLSearchParams(window.location.search);
+      document.getElementById('title').value = urlParams.get('title') || '';
+      document.getElementById('q1').value = urlParams.get('q1') || '';
+      document.getElementById('q2').value = urlParams.get('q2') || '';
+      document.getElementById('q3').value = urlParams.get('q3') || '';
+      document.getElementById('q4').value = urlParams.get('q4') || '';
+      document.getElementById('q5').value = urlParams.get('q5') || '';
+    };
+  </script>
+</body>
+</html>
