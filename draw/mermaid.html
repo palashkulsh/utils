@@ -623,7 +623,14 @@
     document.getElementById('mermaidTextArea-0').addEventListener('keydown', (event) => {
       if (event.key === 'Tab') {
         event.preventDefault();
-        
+        var start = this.selectionStart;
+        var end = this.selectionEnd;
+
+        // Insert tab at the cursor position
+        this.value = this.value.substring(0, start) + "\t" + this.value.substring(end);
+
+        // Move the cursor after the inserted tab
+        this.selectionStart = this.selectionEnd = start + 1;        
       } 
     });
 
