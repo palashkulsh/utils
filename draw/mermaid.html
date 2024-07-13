@@ -620,14 +620,11 @@
         });
     }
 
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'ArrowLeft') {
+    document.getElementById('mermaidTextArea-0').addEventListener('keydown', (event) => {
+      if (event.key === 'Tab') {
         event.preventDefault();
-        document.getElementById('prevBtn').click();
-      } else if (event.key === 'ArrowRight') {
-        event.preventDefault();
-        document.getElementById('nextBtn').click();
-      }
+        
+      } 
     });
 
     updateTextArea();
