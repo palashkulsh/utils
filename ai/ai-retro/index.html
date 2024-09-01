@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant Question Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin-bottom: 10px;
+        }
+        #questions, #history {
+            margin-top: 20px;
+        }
+        .question {
+            margin-bottom: 20px;
+        }
+        .options {
+            margin-left: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+        }
+        #loader {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>AI Assistant Question Generator</h1>
+    <textarea id="problem" placeholder="Describe your situation here..."></textarea>
+    <button onclick="generateQuestions()">Generate Questions</button>
+    <button onclick="downloadPDF()">Download PDF</button>
+    <div id="loader">
+        <div class="spinner"></div>
+        <p>Processing your request...</p>
+    </div>
+    <div id="questions"></div>
+    <button id="submitBtn" style="display: none;" onclick="submitAnswers()">Submit Answers</button>
+    <h2>Conversation History</h2>
+    <div id="history"></div>
+
+    <script>
+        let currentQuestions = [];
+        let previousPrompts = [];
+        let conversationHistory = [];
+
+        function showLoader() {
+            document.getElementById('loader').style.display = 'block';
+        }
+
+        function hideLoader() {
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        function updateURL() {
+            const base64Data = btoa(JSON.stringify({
+                prompts: previousPrompts,
+                history: conversationHistory
+            }));
+            history.pushState(null, '', `?data=${base64Data}`);
+        }
+
+        function loadFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const data = urlParams.get('data');
+            if (data) {
+                const decodedData = JSON.parse(atob(data));
+                previousPrompts = decodedData.prompts;
+                conversationHistory = decodedData.history;
+                updateHistory();
+            }
+        }
+
+        function updateHistory() {
+            const historyDiv = document.getElementById('history');
+            historyDiv.innerHTML = conversationHistory.map((item, index) => `
+                <div>
+                    <h3>Round ${index + 1}</h3>
+                    <p><strong>Situation:</strong> ${item.situation}</p>
+                    ${item.questionsAndAnswers.map(qa => `
+                        <p><strong>Q:</strong> ${qa.question}</p>
+                        <p><strong>A:</strong> ${qa.answer}</p>
+                    `).join('')}
+                </div>
+            `).join('<hr>');
+        }
+
+      function generatePrompt(problem, conversationHistory) {
+	  const allPreviousQuestions = conversationHistory.flatMap(round => 
+              round.questionsAndAnswers.map(qa => qa.question)
+	  );
+
+	  const prompt = `You are an AI assistant specializing in comprehensive analysis and deep exploration of complex situations. Your task is to generate a series of questions that progressively uncover new insights and explore different facets of the given situation.
+
+Current situation: ${problem}
+
+Previously asked questions:
+${allPreviousQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
+
+Guidelines for generating new questions:
+1. Generate 3 questions that are substantially different from all previously asked questions.
+2. Each question should explore a unique aspect, perspective, or implication of the situation that hasn't been addressed before.
+3. Ensure a mix of question styles: analytical, reflective, hypothetical, and problem-solving.
+4. At least one question should challenge assumptions or explore potential long-term implications of the situation.
+5. Avoid any repetition in content, structure, or focus with previous questions.
+6. Questions should progressively deepen the analysis, building upon the context provided by previous questions and answers.
+7. One question can be multiple-choice (provide 4 distinct options), the others should be open-ended.
+8. Consider various dimensions: personal, professional, ethical, societal, emotional, or practical aspects of the situation.
+
+Output format: JSON object with a "questions" key containing an array of 3 question objects
+{
+  "questions": [
+    {
+      "type": "open-ended" | "multiple-choice",
+      "question": "Question text",
+      "options": ["a) Option 1", "b) Option 2", "c) Option 3", "d) Option 4"] // Only for multiple-choice
+    },
+    ... (total of 3 questions)
+  ]
+}
+
+Ensure each question is unique, probing, and contributes to a more comprehensive understanding of the situation. Your response must be a valid JSON object.`;
+
+	  return prompt;
+      }
+      
+
+      function displayQuestions(questions) {
+	  currentQuestions = questions;
+	  const questionsDiv = document.getElementById('questions');
+	  questionsDiv.innerHTML = '';
+
+	  questions.forEach((q, index) => {
+              const questionDiv = document.createElement('div');
+              questionDiv.className = 'question';
+              questionDiv.innerHTML = `<p>${index + 1}. ${q.question}</p>`;
+
+              if (q.type === 'open-ended') {
+		  const textarea = document.createElement('textarea');
+		  textarea.id = `answer-${index}`;
+		  questionDiv.appendChild(textarea);
+              } else if (q.type === 'multiple-choice' && Array.isArray(q.options)) {
+		  const optionsDiv = document.createElement('div');
+		  optionsDiv.className = 'options';
+		  q.options.forEach((option, optionIndex) => {
+                      const radio = document.createElement('input');
+                      radio.type = 'radio';
+                      radio.name = `question-${index}`;
+                      radio.id = `question-${index}-option-${optionIndex}`;
+                      radio.value = option;
+
+                      const label = document.createElement('label');
+                      label.htmlFor = `question-${index}-option-${optionIndex}`;
+                      label.textContent = option;
+
+                      optionsDiv.appendChild(radio);
+                      optionsDiv.appendChild(label);
+                      optionsDiv.appendChild(document.createElement('br'));
+		  });
+		  questionDiv.appendChild(optionsDiv);
+              } else {
+		  // Fallback for unexpected question types
+		  const textarea = document.createElement('textarea');
+		  textarea.id = `answer-${index}`;
+		  questionDiv.appendChild(textarea);
+              }
+
+              questionsDiv.appendChild(questionDiv);
+	  });
+
+	  document.getElementById('submitBtn').style.display = 'block';
+      }
+      
+      async function generateQuestions() {
+	  const problem = document.getElementById('problem').value;
+	  if (!problem) {
+              alert('Please describe your situation first.');
+              return;
+	  }
+
+	  showLoader();
+
+	  const prompt = generatePrompt(problem, conversationHistory);
+
+	  try {
+              const response = await fetch('http://localhost:11434/api/generate', {
+		  method: 'POST',
+		  headers: {
+                      'Content-Type': 'application/json',
+		  },
+		  body: JSON.stringify({
+                      model: "llama3",
+                      prompt: prompt,
+                      stream: false,
+                      format: "json"
+		  }),
+              });
+
+              const data = await response.json();
+              console.log(data);
+              let questions;
+              try {
+		  questions = JSON.parse(data.response).questions;
+              } catch (parseError) {
+		  console.error('Error parsing JSON:', parseError);
+		  questions = data.response.questions;
+              }
+              if (Array.isArray(questions)) {
+		  displayQuestions(questions);
+		  conversationHistory.push({
+                      situation: problem,
+                      questionsAndAnswers: questions.map(q => ({ question: q.question, answer: '' }))
+		  });
+		  updateHistory();
+		  updateURL();
+              } else {
+		  throw new Error('Invalid response format');
+              }
+	  } catch (error) {
+              console.error('Error:', error);
+              alert('An error occurred while generating questions. Please try again. Error: ' + error.message);
+	  } finally {
+              hideLoader();
+	  }
+      }
+
+      async function submitAnswers() {
+	  showLoader();
+
+	  const answers = currentQuestions.map((q, index) => {
+              if (q.type === 'open-ended' || !q.options) {
+		  return document.getElementById(`answer-${index}`).value;
+              } else if (q.type === 'multiple-choice') {
+		  const selectedOption = document.querySelector(`input[name="question-${index}"]:checked`);
+		  return selectedOption ? selectedOption.value : '';
+              }
+	  });
+
+	  conversationHistory[conversationHistory.length - 1].questionsAndAnswers = 
+              currentQuestions.map((q, index) => ({
+		  question: q.question,
+		  answer: answers[index]
+              }));
+
+	  const prompt = generatePrompt(conversationHistory[0].situation, conversationHistory);
+
+	  try {
+              const response = await fetch('http://localhost:11434/api/generate', {
+		  method: 'POST',
+		  headers: {
+                      'Content-Type': 'application/json',
+		  },
+		  body: JSON.stringify({
+                      model: "mistral-openorca",
+                      prompt: prompt,
+                      stream: false,
+                      format: "json"
+		  }),
+              });
+
+              const data = await response.json();
+              console.log(data);
+              let newQuestions;
+              try {
+		  newQuestions = JSON.parse(data.response).questions;
+              } catch (parseError) {
+		  console.error('Error parsing JSON:', parseError);
+		  newQuestions = data.response.questions;
+              }
+              if (Array.isArray(newQuestions)) {
+		  displayQuestions(newQuestions);
+		  conversationHistory.push({
+                      situation: "Follow-up",
+                      questionsAndAnswers: newQuestions.map(q => ({ question: q.question, answer: '' }))
+		  });
+		  updateHistory();
+		  updateURL();
+              } else {
+		  throw new Error('Invalid response format');
+              }
+	  } catch (error) {
+              console.error('Error:', error);
+              alert('An error occurred while generating new questions. Please try again. Error: ' + error.message);
+	  } finally {
+              hideLoader();
+	  }
+      }
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            let yOffset = 10;
+
+            doc.setFontSize(16);
+            doc.text("Conversation History", 10, yOffset);
+            yOffset += 10;
+
+            doc.setFontSize(12);
+            conversationHistory.forEach((round, roundIndex) => {
+                doc.text(`Round ${roundIndex + 1}`, 10, yOffset);
+                yOffset += 7;
+                doc.text(`Situation: ${round.situation}`, 15, yOffset);
+                yOffset += 7;
+
+                round.questionsAndAnswers.forEach((qa, qaIndex) => {
+                    const lines = doc.splitTextToSize(`Q${qaIndex + 1}: ${qa.question}`, 180);
+                    doc.text(lines, 15, yOffset);
+                    yOffset += lines.length * 7;
+
+                    const answerLines = doc.splitTextToSize(`A: ${qa.answer}`, 180);
+                    doc.text(answerLines, 15, yOffset);
+                    yOffset += answerLines.length * 7;
+
+                    yOffset += 5;
+
+                    if (yOffset > 280) {
+                        doc.addPage();
+                        yOffset = 10;
+                    }
+                });
+
+                yOffset += 10;
+
+                if (yOffset > 280) {
+                    doc.addPage();
+                    yOffset = 10;
+                }
+            });
+
+            doc.save("conversation_history.pdf");
+        }
+
+        // Load data from URL when the page loads
+        window.onload = loadFromURL;
+    </script>
+</body>
+</html>
