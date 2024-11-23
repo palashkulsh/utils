@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Quiz System</title>
+	<style>
+	 * {
+	     margin: 0;
+	     padding: 0;
+	     box-sizing: border-box;
+	     font-family: Arial, sans-serif;
+	 }
+
+	 body {
+	     background: #f0f2f5;
+	     color: #333;
+	 }
+
+	 .container {
+	     max-width: 800px;
+	     margin: 20px auto;
+	     padding: 20px;
+	 }
+
+	 .hidden {
+	     display: none !important;
+	 }
+
+	 /* Welcome Screen */
+	 .welcome-screen {
+	     background: white;
+	     padding: 20px;
+	     border-radius: 8px;
+	     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+	 }
+
+	 .file-input {
+	     display: block;
+	     margin: 20px 0;
+	     width: 100%;
+	     padding: 10px;
+	     border: 2px dashed #ccc;
+	     border-radius: 4px;
+	     text-align: center;
+	 }
+
+	 /* Quiz Interface */
+	 .quiz-interface {
+	     position: relative;
+	 }
+
+	 .timer {
+	     position: fixed;
+	     top: 20px;
+	     right: 20px;
+	     background: #007bff;
+	     color: white;
+	     padding: 10px 20px;
+	     border-radius: 20px;
+	     font-weight: bold;
+	     z-index: 100;
+	 }
+
+	 .question-container {
+	     background: white;
+	     padding: 20px;
+	     border-radius: 8px;
+	     margin-bottom: 20px;
+	     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+	 }
+
+	 .options {
+	     display: grid;
+	     gap: 10px;
+	     margin: 20px 0;
+	 }
+
+	 .option {
+	     padding: 15px;
+	     border: 2px solid #ddd;
+	     border-radius: 8px;
+	     cursor: pointer;
+	     transition: all 0.3s;
+	 }
+
+	 .option:hover {
+	     background: #f8f9fa;
+	 }
+
+	 .option.selected {
+	     border-color: #007bff;
+	     background: #e7f1ff;
+	 }
+
+	 .option.correct {
+	     border-color: #28a745;
+	     background: #d4edda;
+	 }
+
+	 .option.incorrect {
+	     border-color: #dc3545;
+	     background: #f8d7da;
+	 }
+
+	 /* Navigation */
+	 .question-nav {
+	     display: flex;
+	     flex-wrap: wrap;
+	     gap: 10px;
+	     margin: 20px 0;
+	     justify-content: center;
+	 }
+	 
+	 .question-nav button {
+	     width: 40px;
+	     height: 40px;
+	     border: none;
+	     border-radius: 50%;
+	     background: #ddd;
+	     cursor: pointer;
+	 }
+
+	 .question-nav button.active {
+	     background: #007bff;
+	     color: white;
+	     /* Add a subtle box shadow to make it stand out more */
+	     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.3);
+	 }
+
+	 .question-nav button.answered {
+	     background: #28a745;
+	     color: white;
+	 }
+
+	 /* Add specific styles for correct and incorrect answers */
+	 .question-nav button.correct-answer {
+	     background: #28a745 !important;
+	     color: white;
+	 }
+
+	 .question-nav button.incorrect-answer {
+	     background: #dc3545 !important;
+	     color: white;
+	 }
+
+	 /* Move submit button below question nav */
+	 .submit-container {
+	     display: flex;
+	     justify-content: center;
+	     margin-top: 20px;
+	 }
+
+	 /* Navigation Controls */
+	 .nav-controls {
+	     display: flex;
+	     justify-content: space-between;
+	     margin: 20px 0;
+	     gap: 10px;
+	 }
+
+	 /* Buttons */
+	 .btn {
+	     padding: 10px 20px;
+	     border: none;
+	     border-radius: 4px;
+	     cursor: pointer;
+	     font-size: 16px;
+	     transition: all 0.3s;
+	 }
+
+	 .btn-primary {
+	     background: #007bff;
+	     color: white;
+	 }
+
+	 .btn-primary:hover {
+	     background: #0056b3;
+	 }
+
+	 .btn-secondary {
+	     background: #6c757d;
+	     color: white;
+	 }
+
+	 .btn-secondary:hover {
+	     background: #545b62;
+	 }
+
+	 .btn:disabled {
+	     opacity: 0.6;
+	     cursor: not-allowed;
+	 }
+
+	 .explanation {
+	     margin-top: 20px;
+	     padding: 15px;
+	     background: #f8f9fa;
+	     border-radius: 8px;
+	     border-left: 4px solid #007bff;
+	 }
+
+	 /* Results */
+	 .results {
+	     text-align: center;
+	     padding: 20px;
+	     background: white;
+	     border-radius: 8px;
+	     margin-top: 20px;
+	 }
+
+	 .score {
+	     font-size: 24px;
+	     margin: 20px 0;
+	 }
+
+	 /* Modal */
+	 .modal-overlay {
+	     position: fixed;
+	     top: 0;
+	     left: 0;
+	     right: 0;
+	     bottom: 0;
+	     background: rgba(0, 0, 0, 0.5);
+	     display: flex;
+	     justify-content: center;
+	     align-items: center;
+	     z-index: 1000;
+	 }
+
+	 .modal {
+	     background: white;
+	     padding: 20px;
+	     border-radius: 8px;
+	     max-width: 400px;
+	     width: 90%;
+	     text-align: center;
+	 }
+
+	 .modal-title {
+	     font-size: 20px;
+	     margin-bottom: 15px;
+	 }
+
+	 .modal-buttons {
+	     display: flex;
+	     justify-content: center;
+	     gap: 10px;
+	     margin-top: 20px;
+	 }
+
+	 /* Mobile Responsiveness */
+	 @media (max-width: 600px) {
+	     .container {
+		 padding: 10px;
+		 margin: 10px;
+	     }
+
+	     .timer {
+		 position: sticky;
+		 top: 0;
+		 right: 0;
+		 width: 100%;
+		 border-radius: 0;
+		 text-align: center;
+	     }
+
+	     .option {
+		 padding: 12px;
+	     }
+
+	     .question-nav button {
+		 width: 35px;
+		 height: 35px;
+		 font-size: 14px;
+	     }
+
+	     .nav-controls {
+		 flex-direction: column;
+	     }
+
+	     .nav-controls .btn {
+		 width: 100%;
+	     }
+	     /* Add these to your existing styles */
+	     .question-nav button.correct-answer {
+		 background: #28a745;
+		 color: white;
+	     }
+
+	     .question-nav button.incorrect-answer {
+		 background: #dc3545;
+		 color: white;
+	     }
+
+	     .question-nav button.unanswered {
+		 background: white;
+		 border: 2px solid #ddd;
+	     }      
+	 }
+	</style>
+    </head>
+    <body>
+	<div class="container">
+	    <!-- Welcome Screen -->
+	    <div class="welcome-screen" id="welcomeScreen">
+		<h1>Quiz System</h1>
+		<p>Please upload your quiz JSON file to begin</p>
+		<input type="file" accept=".json" id="fileInput" class="file-input">
+		<div id="quizInfo" class="hidden">
+		    <h2 id="quizTitle"></h2>
+		    <p id="quizDescription"></p>
+		    <p id="quizTime"></p>
+		    <button class="btn btn-primary" id="startQuiz">Start Test</button>
+		</div>
+	    </div>
+
+	    <!-- Quiz Interface -->
+	    <div class="quiz-interface hidden" id="quizInterface">
+		<div class="timer" id="timer">Time: 00:00</div>
+		
+		<div class="question-container">
+		    <h2 id="questionText"></h2>
+		    <div class="options" id="options"></div>
+		    <div class="explanation hidden" id="explanation"></div>
+		</div>
+
+		<div class="nav-controls">
+                    <button class="btn btn-secondary" id="prevButton" disabled>Previous</button>
+                    <button class="btn btn-secondary" id="nextButton">Next</button>
+		</div>
+
+		<div class="question-nav" id="questionNav"></div>
+		<div class="submit-container">
+		    <button class="btn btn-primary" id="submitQuiz">Submit Test</button>
+		</div>
+		
+	    </div>
+
+	    <!-- Results Screen -->
+	    <div class="results hidden" id="results">
+		<h2>Test Results</h2>
+		<div class="score">
+		    <p>Correct Answers: <span id="correctAnswers">0</span></p>
+		    <p>Incorrect Answers: <span id="incorrectAnswers">0</span></p>
+		    <p>Total Score: <span id="totalScore">0</span>%</p>
+		</div>
+		<button class="btn btn-primary" id="reviewQuiz">Review Answers</button>
+	    </div>
+
+	    <!-- Submit Confirmation Modal -->
+	    <div class="modal-overlay hidden" id="submitModal">
+		<div class="modal">
+		    <h3 class="modal-title">Confirm Submission</h3>
+		    <p>Are you sure you want to submit the test?</p>
+		    <div class="modal-buttons">
+			<button class="btn btn-secondary" id="cancelSubmit">Cancel</button>
+			<button class="btn btn-primary" id="confirmSubmit">Submit</button>
+		    </div>
+		</div>
+	    </div>
+	</div>
+
+	<script>
+	 // Sample JSON structure for reference
+	 const sampleJson = {
+	     "title": "Sample Quiz",
+	     "description": "This is a sample quiz to test your knowledge",
+	     "timeInMinutes": 30,
+	     "questions": [
+		 {
+		     "question": "What is 2 + 2?",
+		     "options": ["3", "4", "5", "6"],
+		     "correctAnswer": 1,
+		     "explanation": "2 + 2 = 4 is a basic arithmetic equation"
+		 }
+		 // More questions...
+	     ]
+	 };
+
+	 let quizData = null;
+	 let currentQuestion = 0;
+	 let timeLeft = 0;
+	 let timer = null;
+	 let userAnswers = [];
+	 let quizSubmitted = false;
+
+	 // DOM Elements
+	 const welcomeScreen = document.getElementById('welcomeScreen');
+	 const quizInterface = document.getElementById('quizInterface');
+	 const resultsScreen = document.getElementById('results');
+	 const fileInput = document.getElementById('fileInput');
+	 const quizInfo = document.getElementById('quizInfo');
+	 const startQuizBtn = document.getElementById('startQuiz');
+	 const submitQuizBtn = document.getElementById('submitQuiz');
+	 const reviewQuizBtn = document.getElementById('reviewQuiz');
+	 const timerDisplay = document.getElementById('timer');
+	 const prevButton = document.getElementById('prevButton');
+	 const nextButton = document.getElementById('nextButton');
+	 const submitModal = document.getElementById('submitModal');
+	 const confirmSubmitBtn = document.getElementById('confirmSubmit');
+	 const cancelSubmitBtn = document.getElementById('cancelSubmit');
+
+	 // File Input Handler
+	 fileInput.addEventListener('change', (e) => {
+	     const file = e.target.files[0];
+	     if (file) {
+		 const reader = new FileReader();
+		 reader.onload = (e) => {
+		     try {
+			 quizData = JSON.parse(e.target.result);
+			 showQuizInfo();
+		     } catch (error) {
+			 alert('Invalid JSON file');
+		     }
+		 };
+		 reader.readAsText(file);
+	     }
+	 });
+
+	 // Show Quiz Info
+	 function showQuizInfo() {
+	     document.getElementById('quizTitle').textContent = quizData.title;
+	     document.getElementById('quizDescription').textContent = quizData.description;
+	     document.getElementById('quizTime').textContent = `Time allowed: ${quizData.timeInMinutes} minutes`;
+	     quizInfo.classList.remove('hidden');
+	 }
+
+	 // Start Quiz
+	 startQuizBtn.addEventListener('click', () => {
+	     welcomeScreen.classList.add('hidden');
+	     quizInterface.classList.remove('hidden');
+	     timeLeft = quizData.timeInMinutes * 60;
+	     userAnswers = new Array(quizData.questions.length).fill(null);
+	     startTimer();
+	     setupQuestionNavigation();
+	     showQuestion(0);
+	 });
+
+	 // Timer Function
+	 function startTimer() {
+	     timer = setInterval(() => {
+		 timeLeft--;
+		 const minutes = Math.floor(timeLeft / 60);
+		 const seconds = timeLeft % 60;
+		 timerDisplay.textContent = `Time: ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+		 
+		 if (timeLeft <= 0) {
+                     clearInterval(timer);
+                     submitQuiz();
+                 }
+	     }, 1000);
+	 }
+
+	 // Update the setupQuestionNavigation function
+	 function setupQuestionNavigation() {
+	     const nav = document.getElementById('questionNav');
+	     nav.innerHTML = '';
+	     for (let i = 0; i < quizData.questions.length; i++) {
+		 const btn = document.createElement('button');
+		 btn.textContent = i + 1;
+		 btn.addEventListener('click', () => showQuestion(i));
+		 nav.appendChild(btn);
+	     }
+	     // If quiz is submitted, color code the navigation buttons
+	     if (quizSubmitted) {
+		 updateNavigationColors();
+	     }
+	 }
+	 
+	 // Show Question
+	 // Update the showQuestion function
+         function showQuestion(index) {
+             currentQuestion = index;
+             const question = quizData.questions[index];
+             document.getElementById('questionText').textContent = question.question;
+             
+             const optionsContainer = document.getElementById('options');
+             optionsContainer.innerHTML = '';
+             
+             question.options.forEach((option, i) => {
+                 const optionElement = document.createElement('div');
+                 optionElement.className = 'option';
+                 if (userAnswers[currentQuestion] === i) {
+                     optionElement.classList.add('selected');
+                 }
+                 optionElement.textContent = option;
+                 
+                 if (quizSubmitted) {
+                     if (i === question.correctAnswer) {
+                         optionElement.classList.add('correct');
+                     } else if (userAnswers[currentQuestion] === i) {
+                         optionElement.classList.add('incorrect');
+                     }
+                 } else {
+                     optionElement.addEventListener('click', () => selectAnswer(i));
+                 }
+                 
+                 optionsContainer.appendChild(optionElement);
+             });
+
+             // Update navigation buttons to show current question
+             updateNavigationColors();
+
+             const explanationElement = document.getElementById('explanation');
+             if (quizSubmitted) {
+                 explanationElement.textContent = question.explanation;
+                 explanationElement.classList.remove('hidden');
+             } else {
+                 explanationElement.classList.add('hidden');
+             }
+
+             prevButton.disabled = currentQuestion === 0;
+             nextButton.disabled = currentQuestion === quizData.questions.length - 1;
+         }
+	 
+         // Select Answer
+         function selectAnswer(index) {
+             userAnswers[currentQuestion] = index;
+             const options = document.querySelectorAll('.option');
+             options.forEach(option => option.classList.remove('selected'));
+             options[index].classList.add('selected');
+             updateNavigation();
+         }
+
+         // Update Navigation
+         function updateNavigation() {
+             const navButtons = document.querySelectorAll('.question-nav button');
+             navButtons.forEach((btn, i) => {
+		 btn.className = '';
+		 if (i === currentQuestion) btn.classList.add('active');
+		 if (userAnswers[i] !== null) btn.classList.add('answered');
+             });
+         }
+
+         // Navigation Controls
+         prevButton.addEventListener('click', () => {
+             if (currentQuestion > 0) {
+		 showQuestion(currentQuestion - 1);
+             }
+         });
+
+         nextButton.addEventListener('click', () => {
+             if (currentQuestion < quizData.questions.length - 1) {
+		 showQuestion(currentQuestion + 1);
+	     }
+	 });
+
+         submitQuizBtn.addEventListener('click', () => {
+             submitModal.classList.remove('hidden');
+         });
+
+         cancelSubmitBtn.addEventListener('click', (e) => {
+             e.preventDefault();
+             submitModal.classList.add('hidden');
+             // Don't do anything else - just hide the modal
+         });
+	 
+	 confirmSubmitBtn.addEventListener('click', () => {
+	     submitModal.classList.add('hidden');
+	     submitQuiz();
+	 });
+
+	 // Update the submitQuiz function to include color coding
+	 function submitQuiz() {
+	     clearInterval(timer);
+	     quizSubmitted = true;
+	     
+	     // Calculate results
+	     let correct = 0;
+	     let unanswered = 0;
+	     userAnswers.forEach((answer, index) => {
+		 if (answer === null) {
+		     unanswered++;
+		 } else if (answer === quizData.questions[index].correctAnswer) {
+		     correct++;
+		 }
+	     });
+	     
+	     // Update results display
+	     document.getElementById('correctAnswers').textContent = correct;
+	     document.getElementById('incorrectAnswers').textContent = quizData.questions.length - correct;
+	     document.getElementById('totalScore').textContent = Math.round((correct / quizData.questions.length) * 100);
+	     
+	     // Show unanswered questions count if any
+	     if (unanswered > 0) {
+		 const unansweredText = document.createElement('p');
+		 unansweredText.textContent = `Unanswered Questions: ${unanswered}`;
+		 document.querySelector('.score').appendChild(unansweredText);
+	     }
+	     
+	     // Switch to results screen
+	     quizInterface.classList.add('hidden');
+	     resultsScreen.classList.remove('hidden');
+	     
+	     // Setup color coding for review phase
+	     updateNavigationColors();
+	 }
+
+	 // Add this new function for updating navigation colors
+         function updateNavigationColors() {
+             const navButtons = document.querySelectorAll('.question-nav button');
+             navButtons.forEach((btn, i) => {
+                 // Reset all classes first
+                 btn.className = '';
+                 
+                 if (quizSubmitted) {
+                     if (userAnswers[i] === quizData.questions[i].correctAnswer) {
+                         btn.classList.add('correct-answer');
+                     } else if (userAnswers[i] !== null) {
+                         btn.classList.add('incorrect-answer');
+                     }
+                 } else {
+                     if (userAnswers[i] !== null) {
+                         btn.classList.add('answered');
+                     }
+                 }
+                 
+                 // Always add active class for current question
+                 if (i === currentQuestion) {
+                     btn.classList.add('active');
+                 }
+             });
+         }
+	 
+         // Review Quiz
+	 reviewQuizBtn.addEventListener('click', () => {
+	     resultsScreen.classList.add('hidden');
+	     quizInterface.classList.remove('hidden');
+	     // Keep next/prev buttons but hide submit button
+	     submitQuizBtn.classList.add('hidden');
+	     // Show navigation buttons in review mode
+	     prevButton.classList.remove('hidden');
+	     nextButton.classList.remove('hidden');
+	     showQuestion(0);
+	 });
+	</script>
+    </body>
+</html>
