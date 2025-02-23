@@ -241,6 +241,9 @@
             align-items: center;
             justify-content: center;
             z-index: 1000;
+            pointer-events: none;
+            overflow: hidden;
+            padding-right: calc(100vw - 100%);
         }
         .motivation-content {
             background: white;
@@ -248,14 +251,17 @@
             border-radius: 15px;
             text-align: center;
             animation: popIn 0.5s ease-out;
+            max-width: 90%;
+            margin: 0 20px;
+            pointer-events: auto;
         }
         .achievement-icon {
             font-size: 50px;
             margin: 20px 0;
         }
         @keyframes popIn {
-            0% { transform: scale(0.5); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+            0% { transform: scale(0.8) translateY(20px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
         }
         .workout-preferences {
             margin-bottom: 20px;
@@ -264,6 +270,9 @@
             margin: 20px 0;
             display: flex;
             gap: 20px;
+        }
+        body.showing-motivation {
+            overflow: hidden;
         }
     </style>
 </head>
@@ -776,10 +785,12 @@
             const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
             
             text.textContent = randomMessage;
+            document.body.classList.add('showing-motivation');
             overlay.style.display = 'flex';
             
             setTimeout(() => {
                 overlay.style.display = 'none';
+                document.body.classList.remove('showing-motivation');
             }, 2000);
         }
 
