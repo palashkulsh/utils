@@ -25,6 +25,7 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding-top: 70px;
         }
         .exercise-item {
             border: 1px solid #ddd;
@@ -103,6 +104,21 @@
             justify-content: space-between;
             align-items: center;
         }
+        .floating-stats {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(248, 248, 248, 0.95);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 15px;
+            margin: 0;
+            transition: transform 0.3s ease;
+            max-width: 800px;
+            margin: 0 auto;
+            border-radius: 0 0 8px 8px;
+        }
         .timer {
             font-size: 1.2em;
             font-weight: bold;
@@ -152,12 +168,19 @@
         }
         @media (max-width: 600px) {
             .workout-stats {
-                flex-direction: column;
+                flex-direction: row;
                 gap: 10px;
                 text-align: center;
+                font-size: 0.9em;
+            }
+            .floating-stats {
+                padding: 10px;
             }
             .workout-controls {
                 grid-template-columns: 1fr;
+            }
+            .workout-plan {
+                padding-top: 60px;
             }
         }
         .muscle-group-filters {
@@ -655,6 +678,8 @@
                     timerInterval = setInterval(updateTimer, 1000);
                 }
             }
+
+            handleStatsFloating();
         }
 
         function toggleSet(exerciseIndex, setIndex) {
@@ -757,6 +782,33 @@
                 overlay.style.display = 'none';
             }, 2000);
         }
+
+        function handleStatsFloating() {
+            const stats = document.querySelector('.workout-stats');
+            const observer = new IntersectionObserver(
+                ([e]) => {
+                    if (e.intersectionRatio < 1) {
+                        stats.classList.add('floating-stats');
+                    } else {
+                        stats.classList.remove('floating-stats');
+                    }
+                },
+                { threshold: [1] }
+            );
+
+            observer.observe(stats);
+        }
+
+        window.addEventListener('scroll', () => {
+            const stats = document.querySelector('.workout-stats');
+            if (!stats) return;
+            
+            if (window.scrollY > 100) {
+                stats.classList.add('floating-stats');
+            } else {
+                stats.classList.remove('floating-stats');
+            }
+        });
 
         window.addEventListener('beforeunload', () => {
             if (timerInterval) {
