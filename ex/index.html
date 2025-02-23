@@ -363,54 +363,6 @@
         let workoutStartTime = null;
         let timerInterval = null;
 
-        const exerciseDescriptions = {
-            'Push-ups': 'Start in a plank position, lower your body until your chest nearly touches the ground, then push back up. Keep your core tight and body straight.',
-            'Squats': 'Stand with feet shoulder-width apart, lower your body as if sitting back into a chair, keeping your chest up and knees behind toes.',
-            'Diamond Push-ups': 'Form a diamond shape with your hands under your chest, perform push-ups keeping elbows close to body. Great for triceps!',
-            'Jump Squats': 'Perform a regular squat, then explosively jump up. Land softly and immediately go into the next squat.',
-            'Dumbbell Curls': 'Stand with dumbbells at sides, palms forward. Curl weights toward shoulders, keeping upper arms still. Lower with control.',
-            'Barbell Curls': 'Hold barbell with palms up, shoulder-width grip. Curl bar toward shoulders while keeping elbows at sides. Lower with control.',
-            'Dumbbell Rows': 'Bend over with dumbbell in one hand, other hand on bench. Pull weight to ribcage, keeping elbow close to body.',
-            'Plank': 'Hold a straight-arm push-up position or forearm plank. Keep body in straight line from head to heels, engage core.',
-            'Mountain Climbers': 'Start in plank position, alternately drive knees toward chest as if running. Keep hips level and core engaged.',
-            'Dumbbell Press': 'Lie on back, hold dumbbells at shoulder level. Press weights up until arms are straight, then lower with control.',
-            'Barbell Press': 'Lie on bench, grip barbell slightly wider than shoulders. Lower to chest, press up to starting position.',
-            'Lunges': 'Step forward into lunge, back knee nearly touching ground. Front knee aligned with ankle. Push back to start.',
-            'Dumbbell Lunges': 'Hold dumbbells at sides while performing lunges. Keep torso upright and core engaged throughout movement.',
-            'Tricep Dips': 'Support body on parallel bars or bench. Lower body by bending elbows, then push back up. Keep elbows close to body.',
-            'Jumping Jacks': 'Jump feet out while raising arms overhead, then jump feet back while lowering arms. Keep rhythm smooth.',
-            'High Knees': 'Run in place, driving knees high toward chest. Pump arms in running motion. Stay on balls of feet.',
-            'Burpees': 'Drop to push-up position, perform push-up, jump feet forward, then jump up with arms overhead. Land softly.',
-            'Jump Rope': 'Jump rope with both feet, keeping jumps small and rhythmic. Stay on balls of feet.',
-            'Running in Place': 'Run in place with good form. Land softly on balls of feet, pump arms naturally.',
-            'Box Jumps': 'Stand before box, jump up with both feet landing softly on box. Step back down, repeat.',
-            'Kettlebell Swings': 'Hinge at hips, swing kettlebell between legs, then thrust hips forward to swing weight to shoulder height.',
-            'Kettlebell Goblet Squats': 'Hold kettlebell at chest, perform squat while keeping torso upright. Keep weight centered.',
-            'Kettlebell Turkish Get-up': 'Lie down holding kettlebell up, strategically stand up keeping weight overhead, then reverse.',
-            'Kettlebell Clean and Press': 'Clean kettlebell to rack position, then press overhead. Return to rack, then starting position.',
-            'Wall Balls': 'Hold medicine ball, squat down, explosively stand and throw ball up to target on wall. Catch and repeat.',
-            'Bear Crawls': 'Start on hands and feet, crawl forward keeping hips low and back flat. Move opposite hand/foot together.',
-            'Inchworm Walk': 'Stand, bend to touch toes, walk hands out to plank, walk feet to hands, stand. Keep legs straight if possible.',
-            'Superman Hold': 'Lie face down, lift arms and legs off ground. Hold position while squeezing back muscles.',
-            'Bird Dogs': 'On hands and knees, extend opposite arm and leg while maintaining neutral spine. Alternate sides.',
-            'Dead Bugs': 'Lie on back, arms up and legs in tabletop. Lower opposite arm and leg while maintaining lower back contact.',
-            'Russian Twists': 'Sit with knees bent, feet off ground. Rotate torso side to side, touching ground on each side.',
-            'V-Ups': 'Lie on back, simultaneously raise straight legs and torso, reaching for toes. Lower with control.',
-            'Pike Push-ups': 'Start in downward dog position, lower head toward ground between hands, push back up.',
-            'Handstand Hold': 'Hold handstand against wall, maintain hollow body position. Build up time gradually.',
-            'Side Planks': 'Support body on forearm and side of foot. Keep body straight, hold position.',
-            'Hollow Body Hold': 'Lie on back, press lower back to ground, lift legs and shoulders off ground. Hold position.',
-            'Crab Walk': 'Sit with hands behind you, lift hips off ground. Walk forward/backward on hands and feet.',
-            'Spiderman Push-ups': 'During push-up, bring one knee toward same-side elbow. Alternate sides with each rep.',
-            'Jump Rope Double Unders': 'Jump rope passes under feet twice per jump. Requires higher jump and faster wrist rotation.',
-            'Burpee Box Jumps': 'Perform burpee, then immediately jump onto box. Step down and repeat.',
-            'Kettlebell Deadlifts': 'Hinge at hips to grasp kettlebell, drive hips forward to stand. Keep back straight throughout.',
-            'Renegade Rows': 'In plank with hands on kettlebells, row one weight while maintaining plank. Alternate sides.',
-            'Walking Lunges': 'Continuously step forward into lunges, alternating legs. Maintain upright posture.',
-            'Jumping Split Squats': 'Start in lunge position, jump and switch legs mid-air. Land softly and continue alternating.',
-            'Mountain Climbers Twist': 'In plank, drive knee across body toward opposite elbow. Alternate sides with speed.'
-        };
-
         let restTimerInterval = null;
         let currentRestTime = 0;
 
@@ -618,6 +570,17 @@
                 const totalSets = exercise.completedSets.length;
                 const progressPercent = (completedSets / totalSets) * 100;
 
+                // Format description into sections
+                const description = exercise.description || '';
+                const formattedDescription = description.split(' FORM: ').map(section => {
+                    return section
+                        .replace('SETUP:', '<strong>Setup:</strong><br>')
+                        .replace('TIPS:', '<br><strong>Tips:</strong><br>')
+                        .replace('BREATHING:', '<br><strong>Breathing:</strong><br>')
+                        .replace(/(\d+\. )/g, '<br>$1')
+                        .replace(/• /g, '<br>• ');
+                }).join('<br><strong>Form:</strong><br>');
+
                 div.innerHTML = `
                     <div class="exercise-progress">
                         ${completedSets}/${totalSets}
@@ -628,6 +591,9 @@
                     <h3>${exercise.exercise}${equipmentText}</h3>
                     <p>Sets: ${exercise.sets} × ${exercise.reps} reps</p>
                     <p>Time per set: ${exercise.time_per_set} seconds</p>
+                    <div class="exercise-description">
+                        ${formattedDescription}
+                    </div>
                     <div>
                         ${exercise.completedSets.map((completed, setIndex) => `
                             <label class="set-checkbox">
@@ -642,14 +608,6 @@
 
                 if (completedSets === totalSets) {
                     div.classList.add('completed');
-                }
-
-                if (exerciseDescriptions[exercise.exercise]) {
-                    div.innerHTML += `
-                        <div class="exercise-description">
-                            <strong>Form Tips:</strong> ${exerciseDescriptions[exercise.exercise]}
-                        </div>
-                    `;
                 }
 
                 container.appendChild(div);
