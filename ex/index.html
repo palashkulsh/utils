@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 15px;
+            background-color: #f0f0f0;
+            font-size: 16px;
+        }
+        .input-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .workout-plan {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .exercise-item {
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 4px;
+            position: relative;
+        }
+        .set-checkbox {
+            margin: 8px;
+            display: inline-block;
+        }
+        .set-checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        .completed {
+            background-color: #e8fff0;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .equipment-item {
+            margin: 15px 0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+        .equipment-item input[type="number"] {
+            width: 100px;
+        }
+        .exercise-progress {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #4CAF50;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 14px;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .exercise-item {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+            h2 {
+                font-size: 20px;
+            }
+        }
+        .workout-stats {
+            background: #f8f8f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .timer {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+        .overall-progress {
+            font-size: 1.2em;
+            color: #4CAF50;
+        }
+        .exercise-progress {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #4CAF50;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .progress-indicator {
+            width: 60px;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #fff;
+            transition: width 0.3s ease;
+        }
+        .workout-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .secondary {
+            background: #6c757d;
+        }
+        .exercise-item.completed {
+            background-color: #e8fff0;
+            border-left: 4px solid #4CAF50;
+        }
+        @media (max-width: 600px) {
+            .workout-stats {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            .workout-controls {
+                grid-template-columns: 1fr;
+            }
+        }
+        .muscle-group-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .muscle-group-filters label {
+            background: #f0f0f0;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        .muscle-group-filters input:checked + label {
+            background: #4CAF50;
+            color: white;
+        }
+        .muscle-group-filters input[type="checkbox"] {
+            display: none;
+        }
+        .rest-timer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 1000;
+            display: none;
+        }
+        .exercise-description {
+            background: #f8f8f8;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .workout-summary {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .difficulty-select {
+            margin: 10px 0;
+        }
+        .motivation-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .motivation-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            animation: popIn 0.5s ease-out;
+        }
+        .achievement-icon {
+            font-size: 50px;
+            margin: 20px 0;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .workout-preferences {
+            margin-bottom: 20px;
+        }
+        .workout-options {
+            margin: 20px 0;
+            display: flex;
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Workout Generator</h1>
+    
+    <div class="input-section" id="inputSection">
+        <h2>Generate Your Workout</h2>
+        <div class="workout-preferences">
+            <label>Workout Style:</label>
+            <select id="workoutStyle">
+                <option value="balanced">Balanced</option>
+                <option value="cardio">Cardio Focus</option>
+                <option value="strength">Strength Focus</option>
+                <option value="hiit">HIIT</option>
+            </select>
+        </div>
+        <div>
+            <label>Workout Duration (minutes):</label>
+            <input type="number" id="duration" min="5" max="120" value="30">
+        </div>
+        <div>
+            <label>Sets per Exercise:</label>
+            <select id="setsPerExercise">
+                <option value="2">2 Sets</option>
+                <option value="3" selected>3 Sets</option>
+                <option value="4">4 Sets</option>
+                <option value="5">5 Sets (Advanced)</option>
+            </select>
+        </div>
+        <div>
+            <label>Intensity:</label>
+            <select id="intensity">
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+            </select>
+        </div>
+        <div class="difficulty-select">
+            <label>Difficulty Level:</label>
+            <select id="difficulty">
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+            </select>
+        </div>
+        <h3>Target Muscle Groups:</h3>
+        <div class="muscle-group-filters">
+            <input type="checkbox" id="chest" value="chest" checked>
+            <label for="chest">Chest</label>
+            <input type="checkbox" id="back" value="back" checked>
+            <label for="back">Back</label>
+            <input type="checkbox" id="legs" value="legs" checked>
+            <label for="legs">Legs</label>
+            <input type="checkbox" id="arms" value="arms" checked>
+            <label for="arms">Arms</label>
+            <input type="checkbox" id="core" value="core" checked>
+            <label for="core">Core</label>
+            <input type="checkbox" id="cardio" value="cardio" checked>
+            <label for="cardio">Cardio</label>
+        </div>
+        <h3>Available Equipment:</h3>
+        <div class="equipment-item">
+            <input type="checkbox" id="hasDumbbell">
+            <label for="hasDumbbell">Dumbbell</label>
+            <input type="number" id="dumbbellWeight" placeholder="Weight (kg)" min="1" max="50" value="5">
+        </div>
+        <div class="equipment-item">
+            <input type="checkbox" id="hasBarbell">
+            <label for="hasBarbell">Barbell</label>
+            <input type="number" id="barbellWeight" placeholder="Weight (kg)" min="5" max="200" value="20">
+        </div>
+        <div class="equipment-item">
+            <input type="checkbox" id="hasKettlebell">
+            <label for="hasKettlebell">Kettlebell</label>
+            <input type="number" id="kettlebellWeight" placeholder="Weight (kg)" min="4" max="48" value="16">
+        </div>
+        <div class="workout-options">
+            <label>
+                <input type="checkbox" id="includeRestTimer" checked>
+                Enable Rest Timer
+            </label>
+            <label>
+                <input type="checkbox" id="includeMotivation" checked>
+                Show Motivation Messages
+            </label>
+        </div>
+        <button onclick="generateWorkout()">Generate Workout</button>
+    </div>
+
+    <div class="workout-plan" id="workoutPlan" style="display: none;">
+        <h2>Your Workout Plan</h2>
+        <div class="workout-stats">
+            <div class="timer">Elapsed Time: <span id="elapsedTime">00:00</span></div>
+            <div class="overall-progress">Overall Progress: <span id="overallProgress">0%</span></div>
+        </div>
+        <div id="exercises"></div>
+        <div class="workout-controls">
+            <button onclick="startWorkout()" id="startButton">Start Workout</button>
+            <button onclick="saveProgress()">Save Progress</button>
+            <button onclick="goBack()" class="secondary">Back to Generator</button>
+        </div>
+    </div>
+
+    <div class="rest-timer" id="restTimer">
+        <h3>Rest Time</h3>
+        <div class="timer-display">00:60</div>
+        <button onclick="skipRest()">Skip Rest</button>
+    </div>
+
+    <div id="motivationOverlay" class="motivation-overlay" style="display: none;">
+        <div class="motivation-content">
+            <h2 id="motivationText">Great Job!</h2>
+            <div class="achievement-icon">🏆</div>
+        </div>
+    </div>
+
+    <script>
+        let exercises = [];
+        let workoutData = null;
+        let workoutStartTime = null;
+        let timerInterval = null;
+
+        const exerciseDescriptions = {
+            'Push-ups': 'Start in a plank position, lower your body until your chest nearly touches the ground, then push back up. Keep your core tight and body straight.',
+            'Squats': 'Stand with feet shoulder-width apart, lower your body as if sitting back into a chair, keeping your chest up and knees behind toes.',
+            'Diamond Push-ups': 'Form a diamond shape with your hands under your chest, perform push-ups keeping elbows close to body. Great for triceps!',
+            'Jump Squats': 'Perform a regular squat, then explosively jump up. Land softly and immediately go into the next squat.',
+            'Dumbbell Curls': 'Stand with dumbbells at sides, palms forward. Curl weights toward shoulders, keeping upper arms still. Lower with control.',
+            'Barbell Curls': 'Hold barbell with palms up, shoulder-width grip. Curl bar toward shoulders while keeping elbows at sides. Lower with control.',
+            'Dumbbell Rows': 'Bend over with dumbbell in one hand, other hand on bench. Pull weight to ribcage, keeping elbow close to body.',
+            'Plank': 'Hold a straight-arm push-up position or forearm plank. Keep body in straight line from head to heels, engage core.',
+            'Mountain Climbers': 'Start in plank position, alternately drive knees toward chest as if running. Keep hips level and core engaged.',
+            'Dumbbell Press': 'Lie on back, hold dumbbells at shoulder level. Press weights up until arms are straight, then lower with control.',
+            'Barbell Press': 'Lie on bench, grip barbell slightly wider than shoulders. Lower to chest, press up to starting position.',
+            'Lunges': 'Step forward into lunge, back knee nearly touching ground. Front knee aligned with ankle. Push back to start.',
+            'Dumbbell Lunges': 'Hold dumbbells at sides while performing lunges. Keep torso upright and core engaged throughout movement.',
+            'Tricep Dips': 'Support body on parallel bars or bench. Lower body by bending elbows, then push back up. Keep elbows close to body.',
+            'Jumping Jacks': 'Jump feet out while raising arms overhead, then jump feet back while lowering arms. Keep rhythm smooth.',
+            'High Knees': 'Run in place, driving knees high toward chest. Pump arms in running motion. Stay on balls of feet.',
+            'Burpees': 'Drop to push-up position, perform push-up, jump feet forward, then jump up with arms overhead. Land softly.',
+            'Jump Rope': 'Jump rope with both feet, keeping jumps small and rhythmic. Stay on balls of feet.',
+            'Running in Place': 'Run in place with good form. Land softly on balls of feet, pump arms naturally.',
+            'Box Jumps': 'Stand before box, jump up with both feet landing softly on box. Step back down, repeat.',
+            'Kettlebell Swings': 'Hinge at hips, swing kettlebell between legs, then thrust hips forward to swing weight to shoulder height.',
+            'Kettlebell Goblet Squats': 'Hold kettlebell at chest, perform squat while keeping torso upright. Keep weight centered.',
+            'Kettlebell Turkish Get-up': 'Lie down holding kettlebell up, strategically stand up keeping weight overhead, then reverse.',
+            'Kettlebell Clean and Press': 'Clean kettlebell to rack position, then press overhead. Return to rack, then starting position.',
+            'Wall Balls': 'Hold medicine ball, squat down, explosively stand and throw ball up to target on wall. Catch and repeat.',
+            'Bear Crawls': 'Start on hands and feet, crawl forward keeping hips low and back flat. Move opposite hand/foot together.',
+            'Inchworm Walk': 'Stand, bend to touch toes, walk hands out to plank, walk feet to hands, stand. Keep legs straight if possible.',
+            'Superman Hold': 'Lie face down, lift arms and legs off ground. Hold position while squeezing back muscles.',
+            'Bird Dogs': 'On hands and knees, extend opposite arm and leg while maintaining neutral spine. Alternate sides.',
+            'Dead Bugs': 'Lie on back, arms up and legs in tabletop. Lower opposite arm and leg while maintaining lower back contact.',
+            'Russian Twists': 'Sit with knees bent, feet off ground. Rotate torso side to side, touching ground on each side.',
+            'V-Ups': 'Lie on back, simultaneously raise straight legs and torso, reaching for toes. Lower with control.',
+            'Pike Push-ups': 'Start in downward dog position, lower head toward ground between hands, push back up.',
+            'Handstand Hold': 'Hold handstand against wall, maintain hollow body position. Build up time gradually.',
+            'Side Planks': 'Support body on forearm and side of foot. Keep body straight, hold position.',
+            'Hollow Body Hold': 'Lie on back, press lower back to ground, lift legs and shoulders off ground. Hold position.',
+            'Crab Walk': 'Sit with hands behind you, lift hips off ground. Walk forward/backward on hands and feet.',
+            'Spiderman Push-ups': 'During push-up, bring one knee toward same-side elbow. Alternate sides with each rep.',
+            'Jump Rope Double Unders': 'Jump rope passes under feet twice per jump. Requires higher jump and faster wrist rotation.',
+            'Burpee Box Jumps': 'Perform burpee, then immediately jump onto box. Step down and repeat.',
+            'Kettlebell Deadlifts': 'Hinge at hips to grasp kettlebell, drive hips forward to stand. Keep back straight throughout.',
+            'Renegade Rows': 'In plank with hands on kettlebells, row one weight while maintaining plank. Alternate sides.',
+            'Walking Lunges': 'Continuously step forward into lunges, alternating legs. Maintain upright posture.',
+            'Jumping Split Squats': 'Start in lunge position, jump and switch legs mid-air. Land softly and continue alternating.',
+            'Mountain Climbers Twist': 'In plank, drive knee across body toward opposite elbow. Alternate sides with speed.'
+        };
+
+        let restTimerInterval = null;
+        let currentRestTime = 0;
+
+        function startRest(duration = 60) {
+            const restTimer = document.getElementById('restTimer');
+            restTimer.style.display = 'block';
+            currentRestTime = duration;
+            
+            updateRestTimerDisplay();
+            restTimerInterval = setInterval(() => {
+                currentRestTime--;
+                updateRestTimerDisplay();
+                
+                if (currentRestTime <= 0) {
+                    clearInterval(restTimerInterval);
+                    restTimer.style.display = 'none';
+                }
+            }, 1000);
+        }
+
+        function updateRestTimerDisplay() {
+            const display = document.querySelector('.timer-display');
+            display.textContent = `00:${currentRestTime.toString().padStart(2, '0')}`;
+        }
+
+        function skipRest() {
+            clearInterval(restTimerInterval);
+            document.getElementById('restTimer').style.display = 'none';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('./exercises.csv', {
+                headers: {
+                    'Content-Type': 'text/csv',
+                    'Cache-Control': 'no-cache'
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    if (!data || !data.trim()) {
+                        throw new Error('CSV file is empty');
+                    }
+                    exercises = parseCSV(data);
+                    if (exercises.length === 0) {
+                        throw new Error('No exercises parsed from CSV');
+                    }
+                    checkUrlAndLoadWorkout();
+                })
+                .catch(error => {
+                    console.error('Error loading exercises:', error);
+                    alert('Error loading exercises. Please ensure exercises.csv is in the same folder as index.html');
+                    document.getElementById('inputSection').style.display = 'block';
+                });
+        });
+
+        const fallbackExercises = [
+            {
+                exercise: 'Push-ups',
+                equipment: 'none',
+                intensity_level: 'medium',
+                time_per_set: '30',
+                muscle_group: 'chest'
+            },
+            {
+                exercise: 'Squats',
+                equipment: 'none',
+                intensity_level: 'medium',
+                time_per_set: '45',
+                muscle_group: 'legs'
+            },
+            {
+                exercise: 'Jumping Jacks',
+                equipment: 'none',
+                intensity_level: 'medium',
+                time_per_set: '60',
+                muscle_group: 'cardio'
+            }
+        ];
+
+        function parseCSV(csv) {
+            try {
+                const lines = csv.split('\n');
+                if (lines.length < 2) {
+                    console.error('CSV file has insufficient data');
+                    return fallbackExercises;
+                }
+                const headers = lines[0].split(',');
+                return lines.slice(1).filter(line => line.trim()).map(line => {
+                    const values = line.split(',');
+                    const exercise = {};
+                    headers.forEach((header, index) => {
+                        exercise[header.trim()] = values[index] ? values[index].trim() : '';
+                    });
+                    return exercise;
+                });
+            } catch (error) {
+                console.error('Error parsing CSV:', error);
+                return fallbackExercises;
+            }
+        }
+
+        function generateWorkout() {
+            const duration = parseInt(document.getElementById('duration').value);
+            const intensity = document.getElementById('intensity').value;
+            const difficulty = document.getElementById('difficulty').value;
+            const workoutStyle = document.getElementById('workoutStyle').value;
+            const setsPerExercise = parseInt(document.getElementById('setsPerExercise').value);
+            
+            const selectedMuscleGroups = Array.from(document.querySelectorAll('.muscle-group-filters input:checked'))
+                .map(input => input.value);
+
+            let availableExercises = exercises.filter(ex => {
+                if (!selectedMuscleGroups.includes(ex.muscle_group)) return false;
+                if (ex.equipment === 'none') return true;
+                if (ex.equipment === 'dumbbell' && document.getElementById('hasDumbbell').checked) return true;
+                if (ex.equipment === 'barbell' && document.getElementById('hasBarbell').checked) return true;
+                if (ex.equipment === 'kettlebell' && document.getElementById('hasKettlebell').checked) return true;
+                return false;
+            });
+
+            availableExercises = availableExercises.filter(ex => ex.intensity_level === intensity);
+
+            let numExercises;
+            switch(workoutStyle) {
+                case 'hiit':
+                    numExercises = Math.max(4, Math.floor(duration / 5));
+                    break;
+                case 'cardio':
+                    numExercises = Math.max(3, Math.floor(duration / 7));
+                    break;
+                case 'strength':
+                    numExercises = Math.max(3, Math.floor(duration / 8));
+                    break;
+                default: // balanced
+                    numExercises = Math.max(3, Math.floor(duration / 7));
+            }
+
+            const selectedExercises = [];
+            
+            const exercisePool = [...availableExercises];
+            for (let i = 0; i < numExercises; i++) {
+                if (exercisePool.length === 0) {
+                    exercisePool.push(...availableExercises);
+                }
+                const randomIndex = Math.floor(Math.random() * exercisePool.length);
+                selectedExercises.push(exercisePool[randomIndex]);
+                exercisePool.splice(randomIndex, 1);
+            }
+
+            selectedExercises.sort((a, b) => {
+                if (a.muscle_group === b.muscle_group) return 0;
+                if (a.muscle_group === 'cardio') return -1;
+                if (b.muscle_group === 'cardio') return 1;
+                return 0;
+            });
+
+            workoutData = {
+                exercises: selectedExercises.map(ex => ({
+                    ...ex,
+                    sets: setsPerExercise,
+                    reps: intensity === 'high' ? 12 : 15,
+                    completedSets: new Array(setsPerExercise).fill(false),
+                    workoutStyle: workoutStyle
+                })),
+                equipment: {
+                    dumbbell: document.getElementById('hasDumbbell').checked ? document.getElementById('dumbbellWeight').value : null,
+                    barbell: document.getElementById('hasBarbell').checked ? document.getElementById('barbellWeight').value : null,
+                    kettlebell: document.getElementById('hasKettlebell').checked ? document.getElementById('kettlebellWeight').value : null
+                },
+                startTime: null,
+                lastActive: Date.now()
+            };
+
+            saveToUrl();
+            displayWorkout();
+        }
+
+        function displayWorkout() {
+            if (!workoutData) return;
+
+            const container = document.getElementById('exercises');
+            container.innerHTML = '';
+
+            const setsPerExercise = workoutData.exercises[0].sets;
+
+            workoutData.exercises.forEach((exercise, exerciseIndex) => {
+                const div = document.createElement('div');
+                div.className = 'exercise-item';
+                
+                let equipmentText = '';
+                if (exercise.equipment === 'dumbbell') {
+                    equipmentText = ` (${workoutData.equipment.dumbbell}kg Dumbbell)`;
+                } else if (exercise.equipment === 'barbell') {
+                    equipmentText = ` (${workoutData.equipment.barbell}kg Barbell)`;
+                } else if (exercise.equipment === 'kettlebell') {
+                    equipmentText = ` (${workoutData.equipment.kettlebell}kg Kettlebell)`;
+                }
+
+                const completedSets = exercise.completedSets.filter(set => set).length;
+                const totalSets = exercise.completedSets.length;
+                const progressPercent = (completedSets / totalSets) * 100;
+
+                div.innerHTML = `
+                    <div class="exercise-progress">
+                        ${completedSets}/${totalSets}
+                        <div class="progress-indicator">
+                            <div class="progress-bar" style="width: ${progressPercent}%"></div>
+                        </div>
+                    </div>
+                    <h3>${exercise.exercise}${equipmentText}</h3>
+                    <p>Sets: ${exercise.sets} × ${exercise.reps} reps</p>
+                    <p>Time per set: ${exercise.time_per_set} seconds</p>
+                    <div>
+                        ${exercise.completedSets.map((completed, setIndex) => `
+                            <label class="set-checkbox">
+                                <input type="checkbox" 
+                                    ${completed ? 'checked' : ''}
+                                    onchange="toggleSet(${exerciseIndex}, ${setIndex})">
+                                Set ${setIndex + 1}
+                            </label>
+                        `).join('')}
+                    </div>
+                `;
+
+                if (completedSets === totalSets) {
+                    div.classList.add('completed');
+                }
+
+                if (exerciseDescriptions[exercise.exercise]) {
+                    div.innerHTML += `
+                        <div class="exercise-description">
+                            <strong>Form Tips:</strong> ${exerciseDescriptions[exercise.exercise]}
+                        </div>
+                    `;
+                }
+
+                container.appendChild(div);
+            });
+
+            const summary = document.createElement('div');
+            summary.className = 'workout-summary';
+            
+            const totalExercises = workoutData.exercises.length;
+            const setsTotal = setsPerExercise;
+            const avgTimePerSet = workoutData.exercises.reduce((acc, ex) => 
+                acc + parseInt(ex.time_per_set || 0), 0) / totalExercises;
+            const restTimeBetweenSets = 60; // seconds
+            const timePerExercise = (setsTotal * avgTimePerSet) + ((setsTotal - 1) * restTimeBetweenSets);
+            const totalTime = totalExercises * timePerExercise;
+            const estimatedMinutes = Math.ceil(totalTime / 60);
+
+            summary.innerHTML = `
+                <h3>Workout Summary</h3>
+                <p>Total Exercises: ${totalExercises}</p>
+                <p>Estimated Duration: ${estimatedMinutes} minutes</p>
+                <p>Details:</p>
+                <ul>
+                    <li>Sets per exercise: ${setsTotal}</li>
+                    <li>Average time per set: ${Math.round(avgTimePerSet)} seconds</li>
+                    <li>Rest between sets: ${restTimeBetweenSets} seconds</li>
+                </ul>
+                <p>Intensity: ${workoutData.exercises[0].intensity_level}</p>
+                <p>Equipment Needed: ${Object.entries(workoutData.equipment)
+                    .filter(([_, weight]) => weight !== null)
+                    .map(([type, weight]) => `${type} (${weight}kg)`)
+                    .join(', ') || 'None'}
+                </p>
+            `;
+
+            container.appendChild(summary);
+
+            document.getElementById('workoutPlan').style.display = 'block';
+            document.getElementById('inputSection').style.display = 'none';
+
+            if (workoutData.startTime) {
+                document.getElementById('startButton').disabled = true;
+                updateTimer();
+                if (!timerInterval) {
+                    timerInterval = setInterval(updateTimer, 1000);
+                }
+            }
+        }
+
+        function toggleSet(exerciseIndex, setIndex) {
+            workoutData.exercises[exerciseIndex].completedSets[setIndex] = 
+                !workoutData.exercises[exerciseIndex].completedSets[setIndex];
+            saveToUrl();
+            displayWorkout();
+            
+            const allSetsCompleted = workoutData.exercises[exerciseIndex].completedSets.every(set => set);
+            
+            if (workoutData.exercises[exerciseIndex].completedSets[setIndex]) {
+                showMotivation();
+                if (document.getElementById('includeRestTimer').checked) {
+                    startRest();
+                }
+            }
+            
+            if (allSetsCompleted) {
+                showMotivation();
+            }
+        }
+
+        function saveToUrl() {
+            const data = encodeURIComponent(JSON.stringify(workoutData));
+            window.history.replaceState({}, '', `?workout=${data}`);
+        }
+
+        function checkUrlAndLoadWorkout() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const workoutParam = urlParams.get('workout');
+            
+            if (workoutParam) {
+                try {
+                    workoutData = JSON.parse(decodeURIComponent(workoutParam));
+                    displayWorkout();
+                } catch (e) {
+                    console.error('Error loading workout from URL:', e);
+                }
+            }
+        }
+
+        function saveProgress() {
+            alert('Progress saved in URL! You can bookmark this page or copy the URL to continue later.');
+        }
+
+        function goBack() {
+            document.getElementById('workoutPlan').style.display = 'none';
+            document.getElementById('inputSection').style.display = 'block';
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+
+        function startWorkout() {
+            if (!workoutData.startTime) {
+                workoutData.startTime = Date.now();
+                saveToUrl();
+            }
+            updateTimer();
+            document.getElementById('startButton').disabled = true;
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            if (!workoutData.startTime) return;
+            
+            const elapsed = Math.floor((Date.now() - workoutData.startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            
+            document.getElementById('elapsedTime').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            const totalSets = workoutData.exercises.reduce((acc, ex) => acc + ex.completedSets.length, 0);
+            const completedSets = workoutData.exercises.reduce((acc, ex) => 
+                acc + ex.completedSets.filter(set => set).length, 0);
+            const progress = Math.round((completedSets / totalSets) * 100);
+            document.getElementById('overallProgress').textContent = `${progress}%`;
+        }
+
+        function showMotivation() {
+            if (!document.getElementById('includeMotivation').checked) return;
+            
+            const overlay = document.getElementById('motivationOverlay');
+            const text = document.getElementById('motivationText');
+            const motivationalMessages = [
+                "You're Crushing It! 💪",
+                "Keep Pushing! 🔥",
+                "Almost There! ⭐",
+                "You're a Beast! 🦁",
+                "Don't Stop Now! 🚀",
+                "Making Progress! 📈",
+                "Feel the Burn! 🔥",
+                "You've Got This! 💪"
+            ];
+            const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
+            
+            text.textContent = randomMessage;
+            overlay.style.display = 'flex';
+            
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 2000);
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+        });
+    </script>
+</body>
+</html> 
